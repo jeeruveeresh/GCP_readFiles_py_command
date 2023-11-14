@@ -1,4 +1,40 @@
+1st Method--------------------------------------------------------------------------------
+import pandas as pd
+from io import StringIO
+from google.cloud import storage
 
+def transform_csv(event, context):
+    """Cloud Function triggered by GCS file upload."""
+    input_bucket_name = "input_buc"
+    output_bucket_name = "output_buc"
+    input_file = event['name']
+    output_file = f"output_{input_file}"
+
+    # Download the file from GCS
+    client = storage.Client()
+    input_bucket = client.bucket(input_bucket_name)
+    output_bucket = client.bucket(output_bucket_name)
+
+    blob = input_bucket.blob(input_file)
+    content = blob.download_as_text()
+
+    # Read the CSV file directly into a Pandas DataFrame
+    df = pd.read_csv(StringIO(content))
+
+    # Apply transformations using Pandas
+    df = df.rename(columns={'Emp Id': 'Emp_Id'})
+    df = df.head(2000)  # Take only the first 2000 records
+    df = df.dropna()
+
+    # Convert the transformed DataFrame back to CSV format
+    transformed_content = df.to_csv(index=False)
+
+    # Upload the transformed content to the output bucket
+    output_blob = output_bucket.blob(output_file)
+    output_blob.upload_from_string(transformed_content)
+
+
+2nd method---------------------------------------------------------------------------------
 ## this code is to keep in main.py in google cloud function for  triggering
 from google.cloud import storage
 
